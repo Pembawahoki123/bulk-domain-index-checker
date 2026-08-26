@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bulk Domain Index Checker</title>
+  <style>
+    :root{
+      --bg:#060912; --panel:#080d18; --line:#16324d; --line2:#0d5a83;
+      --text:#dce8f4; --muted:#66788e; --cyan:#1ed3ff; --green:#32d58c;
+      --red:#ff5b76; --yellow:#ffca58; --purple:#6d21d9; --blue:#009dcc;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; background:
+      radial-gradient(circle at 20% 10%,rgba(40,24,109,.18),transparent 28%),
+      radial-gradient(circle at 80% 0%,rgba(0,140,190,.08),transparent 24%),
+      var(--bg);
+      color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    }
+    .wrap{max-width:1500px;margin:0 auto;padding:20px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .brand{font-weight:900;letter-spacing:.18em;font-size:14px}
+    .brand span{color:var(--cyan)}
+    .badge{font-size:11px;color:#8fa6bd;border:1px solid #17324b;border-radius:999px;padding:7px 10px}
+    .grid{display:grid;grid-template-columns:34% 66%;gap:18px}
+    .panel{
+      background:linear-gradient(180deg,rgba(10,15,27,.98),rgba(5,9,17,.98));
+      border:1px solid #142e47;border-radius:8px;padding:18px;
+      box-shadow:0 14px 50px rgba(0,0,0,.18);
+    }
+    h2{font-size:12px;letter-spacing:.2em;margin:0 0 15px;color:#e8f2fa}
+    textarea{
+      width:100%;height:510px;resize:vertical;background:#07101e;color:#d8e7f4;
+      border:1px solid #18344d;border-radius:4px;padding:14px 16px;outline:none;
+      font:600 13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    }
+    textarea:focus{border-color:#0b86bd;box-shadow:0 0 0 2px rgba(26,192,255,.06)}
+    .actions{display:flex;gap:10px;margin-top:14px}
+    button{
+      height:48px;border-radius:4px;border:1px solid #0d4569;color:#dcecff;
+      background:#071321;font-weight:800;font-size:11px;letter-spacing:.15em;cursor:pointer;
+    }
+    button:hover{filter:brightness(1.12)}
+    button:disabled{cursor:not-allowed;opacity:.6}
+    #checkBtn{
+      flex:1;border:none;background:linear-gradient(90deg,#5917bd,#008fbd);
+      box-shadow:0 0 30px rgba(31,121,204,.16)
+    }
+    .smallbtn{flex:1}
+    .statusline{font-size:11px;color:#6d8298;margin-top:10px;min-height:18px}
+    .progress{height:3px;margin-top:10px;background:#0a1723;border-radius:999px;overflow:hidden}
+    .progress>div{height:100%;width:0;background:linear-gradient(90deg,#7528df,#13c6ef);transition:.25s width}
+    .tablebox{height:510px;overflow:auto;border:1px solid #132d45;border-radius:4px;background:#050a13}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
+    thead{position:sticky;top:0;z-index:2;background:#07121f}
+    th{
+      color:#16c8f4;font-size:10px;letter-spacing:.12em;text-align:left;
+      padding:14px 12px;border-bottom:1px solid #17415f
+    }
+    td{padding:13px 12px;border-bottom:1px solid #142235;color:#7f91a7;vertical-align:middle}
+    tr:hover td{background:rgba(17,47,70,.16)}
+    .num{width:7%}.domain{width:25%}.stat{width:15%}.title{width:40%}.total{width:13%;text-align:center}
+    .status-index{color:var(--green);font-weight:900}
+    .status-not{color:var(--red);font-weight:900}
+    .status-error{color:var(--yellow);font-weight:900}
+    .url{display:block;color:#49647d;font-size:10px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .empty{padding:60px 20px;text-align:center;color:#40546b;font-size:12px}
+    .summary{display:flex;gap:10px;margin-top:12px}
+    .pill{border:1px solid #183149;background:#07101c;padding:9px 11px;border-radius:4px;font-size:10px;color:#7890a7}
+    .pill b{color:#d7e8f6}
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
+      textarea,.tablebox{height:380px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">BULK <span>INDEX CHECKER</span></div>
+    <div class="badge">MAX 1000 DOMAIN / BATCH</div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>INPUT DOMAIN</h2>
+      <textarea id="domains" spellcheck="false" placeholder="domain1.com
+domain2.net
+domain3.org
+
+Bisa paste sampai 1000 domain.
+Tidak perlu tulis site:"></textarea>
+      <div class="actions">
+        <button id="checkBtn">CEK INDEX</button>
+      </div>
+      <div class="progress"><div id="bar"></div></div>
+      <div class="statusline" id="statusText">0 domain siap diperiksa</div>
+    </section>
+
+    <section class="panel">
+      <h2>HASIL PENGECEKAN</h2>
+      <div class="tablebox">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">NO</th>
+              <th class="domain">DOMAIN</th>
+              <th class="stat">STATUS</th>
+              <th class="title">TITLE / URL</th>
+              <th class="total">TOTAL INDEX</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="5"><div class="empty">Belum ada pengecekan.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button class="smallbtn" id="copyBtn">COPY ALL</button>
+        <button class="smallbtn" id="downloadBtn">UNDUH TXT</button>
+      </div>
+      <div class="summary">
+        <div class="pill">INDEX <b id="sumIndex">0</b></div>
+        <div class="pill">NOT INDEX <b id="sumNot">0</b></div>
+        <div class="pill">ERROR <b id="sumErr">0</b></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  const el = id => document.getElementById(id);
+  let lastResults = [];
+
+  function rawDomains(){
+    return el('domains').value.split(/\r?\n|,|\s+/).map(x=>x.trim()).filter(Boolean);
+  }
+
+  function updateInputCount(){
+    const n = rawDomains().length;
+    el('statusText').textContent = `${n} domain siap diperiksa`;
+  }
+
+  function esc(s){
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[c]));
+  }
+
+  function render(results){
+    lastResults = results || [];
+    if(!lastResults.length){
+      el('tbody').innerHTML = `<tr><td colspan="5"><div class="empty">Tidak ada hasil.</div></td></tr>`;
+      return;
+    }
+
+    el('tbody').innerHTML = lastResults.map((r,i)=>{
+      const cls = r.status === 'INDEX' ? 'status-index' :
+                  r.status === 'NOT INDEX' ? 'status-not' : 'status-error';
+      const url = r.url ? `<span class="url">${esc(r.url)}</span>` : '';
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${esc(r.domain)}</td>
+        <td class="${cls}">${esc(r.status)}</td>
+        <td>${esc(r.title || '-')}${url}</td>
+        <td style="text-align:center">${Number(r.total_index || 0).toLocaleString('id-ID')}</td>
+      </tr>`;
+    }).join('');
+
+    el('sumIndex').textContent = lastResults.filter(x=>x.status==='INDEX').length;
+    el('sumNot').textContent = lastResults.filter(x=>x.status==='NOT INDEX').length;
+    el('sumErr').textContent = lastResults.filter(x=>x.status==='ERROR').length;
+  }
+
+  async function checkDomains(){
+    let domains = rawDomains();
+    if(!domains.length){
+      alert('Masukkan domain dulu.');
+      return;
+    }
+    if(domains.length > 1000){
+      alert(`Maksimal 1000 domain. Saat ini: ${domains.length}`);
+      return;
+    }
+
+    el('checkBtn').disabled = true;
+    el('checkBtn').textContent = 'MEMERIKSA...';
+    el('bar').style.width = '12%';
+    el('statusText').textContent = `Memeriksa ${domains.length} domain...`;
+
+    try{
+      const res = await fetch('/api/check',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({domains})
+      });
+
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || 'Request gagal');
+
+      el('bar').style.width = '100%';
+      render(data.results || []);
+      const invalid = (data.invalid || []).length;
+      el('statusText').textContent =
+        `${(data.results||[]).length} / ${domains.length} domain selesai diperiksa` +
+        (invalid ? ` • ${invalid} input tidak valid` : '');
+    }catch(err){
+      el('statusText').textContent = `ERROR: ${err.message}`;
+      alert(err.message);
+      el('bar').style.width = '0%';
+    }finally{
+      el('checkBtn').disabled = false;
+      el('checkBtn').textContent = 'CEK INDEX';
+    }
+  }
+
+  function exportLines(){
+    return lastResults.map((r,i)=>
+      `${i+1}\t${r.domain}\t${r.status}\t${r.total_index || 0}\t${r.title || '-'}\t${r.url || ''}`
+    ).join('\n');
+  }
+
+  async function copyAll(){
+    if(!lastResults.length) return alert('Belum ada hasil.');
+    await navigator.clipboard.writeText(exportLines());
+    const old = el('copyBtn').textContent;
+    el('copyBtn').textContent = 'TERSALIN';
+    setTimeout(()=>el('copyBtn').textContent=old,900);
+  }
+
+  function downloadTxt(){
+    if(!lastResults.length) return alert('Belum ada hasil.');
+    const header = 'NO\tDOMAIN\tSTATUS\tTOTAL_INDEX\tTITLE\tURL\n';
+    const blob = new Blob([header + exportLines()], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `hasil-index-${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }
+
+  el('domains').addEventListener('input', updateInputCount);
+  el('checkBtn').addEventListener('click', checkDomains);
+  el('copyBtn').addEventListener('click', copyAll);
+  el('downloadBtn').addEventListener('click', downloadTxt);
+</script>
+</body>
+</html>
